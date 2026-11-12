@@ -1,0 +1,140 @@
+{
+  "segment": "CM (Capital Market / equity)",
+  "exchange": "NSE",
+  "year": 2026,
+  "source": {
+    "name": "NSE India holiday master API",
+    "url": "https://www.nseindia.com/api/holiday-master?type=trading",
+    "circular_ref": "NSE/CMTR/71775, Circular Ref No 172/2025, dated December 12, 2025",
+    "circular_url": "https://nsearchives.nseindia.com/content/circulars/CMTR71775.pdf",
+    "retrieved_at": "2026-11-12T17:30:00Z",
+    "verified": true
+  },
+  "notes": [
+    "Dates where the market is closed for the whole day. Saturdays and Sundays are closed anyway and are listed by NSE for completeness.",
+    "An entry marked muhurat_marked carries an asterisk in the NSE list. Muhurat trading is a special session held that day and its timing is notified separately by NSE each year, so it is not encoded here.",
+    "BSE publishes its own list. For the equity segment the BSE and NSE dates have matched in recent years, but they are separate announcements and must be verified per year before being relied on."
+  ],
+  "holidays": [
+    {
+      "date": "2026-01-15",
+      "weekday": "Thursday",
+      "description": "Municipal Corporation Election - Maharashtra",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-01-26",
+      "weekday": "Monday",
+      "description": "Republic Day",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-02-15",
+      "weekday": "Sunday",
+      "description": "Mahashivratri",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-03-03",
+      "weekday": "Tuesday",
+      "description": "Holi",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-03-21",
+      "weekday": "Saturday",
+      "description": "Id-Ul-Fitr (Ramadan Eid)",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-03-26",
+      "weekday": "Thursday",
+      "description": "Shri Ram Navami",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-03-31",
+      "weekday": "Tuesday",
+      "description": "Shri Mahavir Jayanti",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-04-03",
+      "weekday": "Friday",
+      "description": "Good Friday",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-04-14",
+      "weekday": "Tuesday",
+      "description": "Dr. Baba Saheb Ambedkar Jayanti",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-05-01",
+      "weekday": "Friday",
+      "description": "Maharashtra Day",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-05-28",
+      "weekday": "Thursday",
+      "description": "Bakri Id",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-06-26",
+      "weekday": "Friday",
+      "description": "Muharram",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-08-15",
+      "weekday": "Saturday",
+      "description": "Independence Day",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-09-14",
+      "weekday": "Monday",
+      "description": "Ganesh Chaturthi",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-10-02",
+      "weekday": "Friday",
+      "description": "Mahatma Gandhi Jayanti",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-10-20",
+      "weekday": "Tuesday",
+      "description": "Dussehra",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-11-08",
+      "weekday": "Sunday",
+      "description": "Diwali Laxmi Pujan",
+      "muhurat_marked": true
+    },
+    {
+      "date": "2026-11-10",
+      "weekday": "Tuesday",
+      "description": "Diwali-Balipratipada",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-11-24",
+      "weekday": "Tuesday",
+      "description": "Prakash Gurpurb Sri Guru Nanak Dev",
+      "muhurat_marked": false
+    },
+    {
+      "date": "2026-12-25",
+      "weekday": "Friday",
+      "description": "Christmas",
+      "muhurat_marked": false
+    }
+  ]
+}

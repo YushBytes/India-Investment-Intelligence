@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+trader/
+*.pre-india.bak
+*.migration.json

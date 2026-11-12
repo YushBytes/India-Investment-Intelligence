@@ -16,6 +16,12 @@ ORDER_PATH = ["trader-scanner", "trader-entry", "trader-exit", "trader-timemachi
               "trader-pelosi", "trader-risk", "trader-broker", "trader-alerts"]
 V1_ONLY = ["trader-copycat", "trader-screener", "trader-tax", "trader-rebalance"]
 
+# India migration, phase 2: the shared package the eleven skills will be
+# re-pointed at. It is a package, not a skill, so it has no SKILL.md and is
+# checked on its own terms below.
+CORE = "indiacore"
+CORE_MODULES = ["calendar_in", "config_in", "market", "money", "provenance", "symbols"]
+
 
 def frontmatter(path):
     with open(path, encoding="utf-8") as fh:
@@ -38,9 +44,69 @@ class Repo(unittest.TestCase):
                        if os.path.isfile(os.path.join(ROOT, d, "SKILL.md")))
         self.assertEqual(found, sorted(SKILLS))
 
-    def test_root_matches_the_reel(self):
-        root = sorted(d for d in os.listdir(ROOT) if not d.startswith(".git"))
-        self.assertEqual(root, sorted([".claude-plugin", "LICENSE", "README.md", "tests"] + SKILLS))
+    def test_root_matches_the_reel_plus_the_india_core(self):
+        # Dot entries are tool droppings (.git, .pytest_cache, .claude-plugin
+        # excepted) rather than repo content. The original test filtered only
+        # ".git", which made it pass or fail depending on whether pytest had
+        # already written its cache.
+        root = sorted(d for d in os.listdir(ROOT)
+                      if d == ".claude-plugin" or not d.startswith("."))
+        self.assertEqual(root, sorted([".claude-plugin", "LICENSE", "README.md",
+                                       "tests", CORE] + SKILLS))
+
+    def test_the_core_is_a_package_and_not_a_twelfth_skill(self):
+        folder = os.path.join(ROOT, CORE)
+        self.assertTrue(os.path.isdir(folder))
+        self.assertTrue(os.path.exists(os.path.join(folder, "__init__.py")))
+        self.assertFalse(os.path.exists(os.path.join(folder, "SKILL.md")),
+                         "indiacore is shared code, not a skill")
+        for mod in CORE_MODULES:
+            self.assertTrue(os.path.exists(os.path.join(folder, mod + ".py")), mod)
+
+    def test_the_core_adds_no_dependencies(self):
+        """The pack promises nothing to pip install. That has to stay true."""
+        allowed = set("""
+            __future__ copy csv datetime decimal gzip hashlib importlib io json
+            math os random re shutil statistics subprocess sys tempfile time
+            typing unittest urllib xml zipfile indiacore
+        """.split())
+        folder = os.path.join(ROOT, CORE)
+        for name in sorted(os.listdir(folder)):
+            if not name.endswith(".py"):
+                continue
+            with open(os.path.join(folder, name), encoding="utf-8") as fh:
+                src = fh.read()
+            for m in re.finditer(r"(?m)^\s*(?:from|import)\s+([A-Za-z_][\w.]*)", src):
+                top = m.group(1).split(".")[0]
+                if top == ".":
+                    continue
+                self.assertIn(top, allowed, "%s/%s imports %s" % (CORE, name, top))
+
+    def test_the_core_holiday_data_is_verified_and_sourced(self):
+        """A calendar with no provenance is a guess with a filename."""
+        data = os.path.join(ROOT, CORE, "data")
+        files = [f for f in os.listdir(data) if f.endswith(".json")]
+        self.assertTrue(files, "no holiday data shipped")
+        for name in files:
+            with open(os.path.join(data, name), encoding="utf-8") as fh:
+                doc = json.load(fh)
+            src = doc.get("source") or {}
+            self.assertIs(src.get("verified"), True, name)
+            for field in ("name", "url", "retrieved_at"):
+                self.assertTrue(src.get(field), "%s is missing source.%s" % (name, field))
+            self.assertTrue(doc.get("holidays"), name)
+
+    def test_the_india_config_bans_what_the_mandate_bans(self):
+        path = os.path.join(ROOT, CORE, "config.india.example.json")
+        with open(path) as fh:
+            cfg = json.load(fh)
+        self.assertEqual(cfg["currency"], "INR")
+        for key in ("allow_intraday", "allow_options", "allow_futures",
+                    "allow_margin", "allow_mtf", "allow_short", "auto_execute"):
+            self.assertIs(cfg[key], False, key)
+        self.assertIs(cfg["delivery_only"], True)
+        for key in cfg:
+            self.assertFalse(key.endswith("_usd"), key)
 
     def test_frontmatter_name_and_description(self):
         for s in SKILLS:
@@ -102,7 +168,8 @@ class Repo(unittest.TestCase):
 
     def test_every_tool_runs_on_python_3_8(self):
         # no 3.9+ only modules or syntax in the tools (the README promises 3.8)
-        for s in SKILLS:
+        # indiacore is held to the same floor as the skills it will serve
+        for s in SKILLS + [CORE]:
             folder = os.path.join(ROOT, s)
             for f in os.listdir(folder):
                 if not f.endswith(".py"):
