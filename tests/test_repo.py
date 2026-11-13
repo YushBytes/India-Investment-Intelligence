@@ -76,7 +76,38 @@ class Repo(unittest.TestCase):
         root = sorted(d for d in os.listdir(ROOT)
                       if d == ".claude-plugin" or not d.startswith("."))
         self.assertEqual(root, sorted([".claude-plugin", "LICENSE", "README.md",
-                                       "tests", CORE] + SKILLS))
+                                       "docs", "tests", CORE] + SKILLS))
+
+    def test_the_tracking_documents_exist(self):
+        for name in ("PROJECT_ROADMAP.md", "DEVELOPMENT_WORKFLOW.md"):
+            self.assertTrue(os.path.exists(os.path.join(ROOT, "docs", name)),
+                            name)
+
+    def test_the_roadmap_dates_every_completed_phase_to_a_real_commit(self):
+        """A phase marked complete must name the commit that completed it.
+
+        The roadmap is the project's own record of what is done. A phase
+        claimed complete with no commit behind it is the one way this file
+        could become a more flattering account than the history.
+        """
+        path = os.path.join(ROOT, "docs", "PROJECT_ROADMAP.md")
+        with open(path, encoding="utf-8") as fh:
+            roadmap = fh.read()
+        rows = [line for line in roadmap.splitlines()
+                if line.startswith("| ") and "**Complete**" in line]
+        self.assertEqual(len(rows), 3, "expected phases 1, 2 and 3 complete")
+        hashes = re.findall(r"\b([0-9a-f]{7})\b", " ".join(rows))
+        for sha in ("df3eb2d", "c391136"):
+            self.assertIn(sha, hashes, "%s is not cited in the roadmap" % sha)
+
+    def test_the_roadmap_claims_no_phase_beyond_the_third(self):
+        path = os.path.join(ROOT, "docs", "PROJECT_ROADMAP.md")
+        with open(path, encoding="utf-8") as fh:
+            roadmap = fh.read()
+        _, _, later = roadmap.partition("## Phase 4")
+        self.assertTrue(later, "the roadmap stops before phase 4")
+        self.assertNotIn("**Complete**", later,
+                         "a phase beyond the third is marked complete")
 
     def test_the_core_is_a_package_and_not_a_twelfth_skill(self):
         folder = os.path.join(ROOT, CORE)
