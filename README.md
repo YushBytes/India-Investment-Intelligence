@@ -1,216 +1,316 @@
-# The Day Trader skill
+# India Investment Intelligence
 
-11 Claude skills for day trading: scan thousands of charts, track breaking news, time every entry and exit, and replay every outcome before you risk a dollar.
+An India-first investment intelligence system for Indian equity research:
+market data, portfolio analysis, risk management and daily decision support,
+built for NSE and BSE rather than adapted from a US market tool.
 
-Free, MIT, no signup, no API key. The tools are plain Python that read free
-public data: Yahoo Finance charts, Nasdaq Trader's symbol lists, SEC EDGAR
-and the House Clerk.
+The project is under active development. Three of fifteen planned phases are
+complete. This README describes only what is built and tested today, and
+[docs/PROJECT_ROADMAP.md](docs/PROJECT_ROADMAP.md) describes the rest as
+planned work.
 
-One scans thousands of charts for setups. Another tracks breaking news on
-every stock you watch. One watches a setup bar by bar and tells you the moment
-to get in, and another sets your stop and your target before you do. And the
-craziest one is the Time Machine: before you risk a dollar, it replays the
-rest of the session 10,000 times from the stock's own recent bars, plus every
-past day the same setup fired, and tells you the honest odds.
+## Project Vision
 
-And no trade goes through until you say yes. Nothing in this pack can place
-an order on its own. Paper trading is the default.
+Most retail investment tooling is built for US markets and then pointed at
+Indian symbols, which fails in ways that are quiet rather than loud: a
+dollar-denominated limit applied to rupee amounts, a NYSE calendar applied to
+an exchange that does not observe daylight saving, a symbol encoder that turns
+`SBIN.NS` into `SBIN-NS` and reports "no data" instead of an error.
 
-> **Looking for the original Trader skill?** Copy an investor's 13F, the
-> stock screener, tax lots and rebalancing live in
-> [github.com/Jakeschincariol/trader-skill](https://github.com/Jakeschincariol/trader-skill).
-> This repo is its day-trading sequel: the Trader skill v2.
+The goal is a research and decision-support system that treats the Indian
+market as the primary case: NSE and BSE as separate instruments, INR as a
+first-class currency, the exchange's own published holiday circulars as the
+calendar, and the exchange's own end-of-day files as the authoritative price.
+Above all, it is built so that **a missing or stale quote is never presented
+as a current market price**.
 
-## Install
+It is a research tool. It does not place orders. See [Safety](#safety).
 
-Paste this into Claude:
+## Current Features
+
+Implemented, tested, and in use by the data layer:
+
+| Area | What works today |
+| --- | --- |
+| **Trading calendar** | IST as a fixed UTC+05:30 with no daylight saving. NSE 2026 holidays loaded from the exchange's own holiday master (circular NSE/CMTR/71775). An unverified year raises rather than guessing. Muhurat trading is modelled as a third state, neither open nor a plain holiday |
+| **Symbol normalisation** | NSE `.NS` and BSE `.BO` suffixes kept in the type, not in a string. Correct percent-encoding, so `M&M.NS` travels as `M%26M.NS`. Indices (`^NSEI`, `^BSESN`) are a separate type with no exchange suffix. BSE scrip codes are refused rather than sent to an endpoint that 404s them |
+| **INR money model** | Amounts stored as integer paise, carrying their currency. Adding rupees to dollars raises. No implicit FX conversion and no built-in rate table. Lakh and crore digit grouping |
+| **Market sessions** | NSE and BSE equity sessions (09:15 to 15:30 IST, 09:00 pre-open) modelled separately, plus `last_completed_session`, the date an end-of-day figure actually belongs to |
+| **Market data service** | One entry point (`MarketDataService`) for quotes, daily bars, intraday bars and index levels, returning eleven distinguishable outcomes so a caller can tell fresh from cached, delayed from end-of-day, a genuinely empty result from a dead feed |
+| **Data providers** | Three working providers (Yahoo, NSE bhavcopy, BSE bhavcopy) behind one interface, each declaring exactly which exchanges, instruments, data kinds and intervals it serves |
+| **Data validation** | Five verdicts (valid, warning, invalid, incomplete, stale). Structurally impossible records are rejected; a circuit-limit move or a split-sized gap is flagged and kept, not discarded |
+| **Provenance** | Every record carries its provider, source, retrieval time, source timestamp and freshness. A record cannot be constructed without them |
+| **Freshness classification** | Decided from the source timestamp, the market state, the interval and what the provider actually promises, so the same figure is valid end-of-day data at 09:00 and stale at 11:00 |
+| **Caching** | File cache with deterministic exchange-aware keys, atomic writes, checksum-based corruption detection, per-kind TTLs. Failures are never cached, and a stale entry never silently replaces a failed request |
+| **Retry and rate limiting** | Retry classification by HTTP status (a 404 is the answer, not a fault), exponential backoff with jitter, `Retry-After` support, and per-provider cooldowns that fail fast instead of blocking |
+| **Config migration** | A USD configuration profile migrates to INR only under an explicit policy, because 50 dollars and 50 rupees are different limits. Keeps a byte-for-byte backup and reverts exactly |
+
+**792 automated tests pass.** The entire test suite runs offline against
+recorded fixtures.
+
+### Also in this repository
+
+This project began as a migration of an upstream US day-trading skill pack
+(see [Attribution](#attribution)). The eleven original `trader-*` skill
+folders are still present and still work as they did upstream, which means
+they are **US-oriented**: they use NYSE hours, SEC EDGAR, Nasdaq Trader symbol
+lists and USD amounts, and they do not use any of the India code above. They
+have not been re-pointed yet; that is a later phase.
+
+## Architecture
 
 ```
-https://github.com/Jakeschincariol/day-trader-skill
+indiacore/                   the India-first shared library
+  calendar_in.py             IST, NSE holiday circulars, Muhurat as a third state
+  symbols.py                 NSE/BSE symbols, suffixes, URL encoding, indices
+  money.py                   INR in paise, currency-carrying, no implicit FX
+  market.py                  NSE and BSE session model, last completed session
+  provenance.py              freshness vocabulary, and empty vs broken
+  config_in.py               INR config schema and the explicit USD migration
+  data/                      the exchange's published holiday lists (data only)
 
-install skill
+  data_service.py            MarketDataService: the one entry point
+  rate_limit.py              request spacing and rate-limit cooldowns
+  retry.py                   what is worth retrying, and what is just the answer
+  DATA.md                    full data-layer documentation
+
+  providers/
+    base.py                  the Provider interface and its error types
+    transport.py             the only module that touches the network
+    registry.py              provider selection and the capability matrix
+    yahoo.py                 Yahoo chart endpoint
+    nse.py                   NSE bhavcopy, and the refused NSE quote API
+    bse.py                   BSE bhavcopy, and the refused BSE quote API
+    live_probe.py            optional live checks, separate from the test suite
+
+  marketdata/
+    models.py                Quote, Bar, Provenance, Capabilities, ProviderStatus
+    normalize.py             provider payloads to records
+    validation.py            the five verdicts
+    quality.py               the freshness rules
+    cache.py                 the file cache
+
+trader-*/                    eleven inherited US day-trading skills (not re-pointed)
+tests/                       792 tests, all offline, with recorded fixtures
+docs/                        roadmap and development workflow
 ```
 
-Or as a plugin, in Claude Code:
+Two design rules hold the data layer together:
 
-```
-/plugin marketplace add Jakeschincariol/day-trader-skill
-/plugin install day-trader-skill@day-trader-skill
-```
+1. **Only `providers/transport.py` makes network requests.** Every provider
+   takes a transport, so the test suite passes one that reads a recorded
+   file and nothing in a test can reach the network. A repository test
+   enforces this.
+2. **A record cannot exist without its provenance.** There is no constructor
+   that accepts a bare number and calls it a market price.
 
-Claude Code namespaces plugin skills, so installed as a plugin they show up as
-`/day-trader-skill:trader-scanner` and so on. Copy the folders instead if you want
-plain `/trader-scanner`:
+Full detail, including the freshness rules and cache design, is in
+[indiacore/DATA.md](indiacore/DATA.md).
 
-```bash
-git clone https://github.com/Jakeschincariol/day-trader-skill.git
-cp -r day-trader-skill/trader-* ~/.claude/skills/
-```
+## Supported Providers
 
-Project-local instead of global: copy the same folders into your repo's
-`.claude/skills/`. No Claude Code at all? Paste any single `SKILL.md` at the
-top of a chat and it runs as a mode. You lose the Python tools, but the method
-works.
+Every claim here was verified against the live endpoint before the adapter
+was written. `python -m indiacore.providers.live_probe` re-checks them on
+demand.
 
-The tools need Python 3.8 or newer. Nothing to pip install. The SEC tools
-(news filings, the analyst) ask you to identify yourself: put your name and
-email in `trader/config.json` (`"sec_user_agent": "Your Name you@example.com"`)
-or in the `SEC_USER_AGENT` environment variable.
+| Provider | Official | Working | Quotes | Daily bars | Intraday | Index | Exchanges |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `yahoo` | no | yes | yes | yes | 1m to 60m | yes | NSE, BSE |
+| `nse_bhavcopy` | **yes** | yes | no | yes | no | no | NSE |
+| `bse_bhavcopy` | **yes** | yes | no | yes | no | no | BSE |
+| `nse_quote_api` | yes | **no** | - | - | - | - | NSE |
+| `bse_quote_api` | yes | **no** | - | - | - | - | BSE |
 
-## The eleven
+**Yahoo Finance chart endpoint.** Unofficial and best-effort. An undocumented
+endpoint on a public host, with no published delay, no service level and no
+guarantee of continued access. It declares no delay field of any kind, so
+nothing from it is ever classified as a live price; its ceiling is "delayed".
+Its BSE history is thinner than its NSE history: a five-day daily request for
+`INFY.BO` returned one bar where `INFY.NS` returned five.
 
-| command | job | what it does |
+**NSE bhavcopy.** The exchange's own published end-of-day file for a
+completed session, covering the whole cash market in one file. Authoritative,
+and **end-of-day only**: the file does not exist until the session is over, so
+this provider refuses any request whose end date is after the last completed
+session. Published unadjusted, so splits and bonus issues appear as price
+gaps. Efficient for a market-wide snapshot of one date, expensive for one
+instrument across many sessions.
+
+**BSE bhavcopy.** The same, in the identical column format, served as a plain
+CSV. It also carries the BSE scrip code alongside the ticker. For
+2026-11-12, SBIN closed at 1086.50 on NSE and at 1085.00 on BSE, on volumes an
+order of magnitude apart. Nothing in this project averages the two or
+substitutes one for the other.
+
+**The NSE and BSE live quote APIs are not usable and are not implemented.**
+Both answered HTTP 403 to a plain request. They respond only if browser
+cookies and headers are primed and replayed, which is circumventing an access
+control, so these adapters exist to document the endpoint and refuse. A
+licensed exchange feed would be a separate provider with its own credentials.
+
+## Completed Phases
+
+| Phase | Name | Status | Commit |
+| --- | --- | --- | --- |
+| 1 | Repository audit | Complete | (audit, no code change) |
+| 2 | India market foundation | Complete | [`df3eb2d`](https://github.com/YushBytes/India-Investment-Intelligence/commit/df3eb2d89fdf5a3585831a90ccbcbdb8a97cdc79) |
+| 3 | Indian market data infrastructure | Complete | [`c391136`](https://github.com/YushBytes/India-Investment-Intelligence/commit/c391136b52ee49c82e1d97a8ae112e110b84cce7) |
+
+## Roadmap
+
+Planned, not built. Nothing below is implemented.
+
+| Phase | Name | Status |
 | --- | --- | --- |
-| `/trader-scanner` | Chart Scanner | Scans thousands of charts for setups: opening-range breakouts, flags, oversold bounces. |
-| `/trader-news` | News Monitor | Tracks breaking news on every stock you watch and flags what moves it. |
-| `/trader-entry` | Entry Timer | Watches a setup bar by bar and tells you the moment to get in. |
-| `/trader-exit` | Exit Planner | Sets your stop and your target before you enter, so you know when to get out. |
-| `/trader-timemachine` | Time Machine | Replays every possible outcome of a trade before you risk a dollar: 10,000 simulated sessions plus every past time the setup fired. |
-| `/trader-risk` | Risk Manager | Checks every trade against your limits and stops anything over them. |
-| `/trader-budget` | Budget Manager | Sizes every position to your budget and your max loss per trade. |
-| `/trader-broker` | Order Executor | Sends approved orders to your broker, paper trading by default, never without your yes. |
-| `/trader-alerts` | Price Alerts | Rings when a price, a stop or the opening bell hits. |
-| `/trader-analyst` | Earnings Analyst | Reads earnings reports and sums up what changed. |
-| `/trader-pelosi` | Pelosi Tracker | Reads Congress's stock-trade disclosures the minute they are filed. |
+| 4 | Fundamental data and financial metrics | Planned |
+| 5 | Technical analysis indicators | Planned |
+| 6 | Stock scanner and screener | Planned |
+| 7 | Portfolio management | Planned |
+| 8 | Risk and allocation | Planned |
+| 9 | News and events intelligence | Planned |
+| 10 | Daily decision engine | Planned |
+| 11 | Re-point the inherited skills to India | Planned |
+| 12 | Reporting and output | Planned |
+| 13 | Backtesting and validation | Planned |
+| 14 | Performance and reliability | Planned |
+| 15 | Documentation and release | Planned |
 
-## How to use it
+See [docs/PROJECT_ROADMAP.md](docs/PROJECT_ROADMAP.md) for deliverables,
+dependencies and remaining work per phase.
 
-Everything lands in a `trader/` folder in your project, and each skill reads
-what the last one wrote:
+## Installation
 
+Python 3.8 or newer. **No third-party dependencies**: everything uses the
+standard library, so there is nothing to `pip install` to run the code.
+
+### Windows (PowerShell)
+
+```powershell
+git clone https://github.com/YushBytes/India-Investment-Intelligence.git
+cd India-Investment-Intelligence
+python --version          # 3.8 or newer
+
+# optional, for running the test suite
+python -m pip install pytest
 ```
-scanner -> news -> entry -> exit -> timemachine -> budget -> risk -> broker   (one trade)
-alerts: stop, target, flat by the close                                       (while it is open)
-news / analyst / pelosi                                                        (on a schedule)
-```
 
-An example, the trade in the reel: Tesla, Monday October 19 2026, real data.
-
-1. **`/trader-scanner`** at 10:15 AM ET: of the 231 charts in the reel's
-   scan, 42 had closed above their 15-minute opening range. TSLA is one: range 354.47 to 362.18,
-   the 10:10 candle closed at 364.18, 0.55 % over the top.
-2. **`/trader-news`**: the morning's TSLA headlines, in New York time
-   ("Tesla-SpaceX Merger Mania Strikes Wall Street Ahead of Earnings", 8:04,
-   tagged earnings and deal). Tesla reports this week: a day trade is out
-   before the close, so it is not exposed to the report.
-3. **`/trader-entry`** watched TSLA bar by bar. At 10:12 it said waiting (the
-   10:10 bar was still forming). At 10:15 it said triggered: the first
-   5-minute close above the range, 364.18.
-4. **`/trader-exit`** set the plan before the entry: stop at the range's
-   midpoint, 358.32, so 5.86 a share at risk; target one times that risk,
-   370.04; flat by 3:55 PM either way.
-5. **`/trader-timemachine`** replayed the rest of the day 10,000 times, each
-   5-minute candle drawn from TSLA's own candles at that time of day over the
-   previous 59 sessions (seed 19, so anyone can repeat it): target first
-   29.4 %, stop first 25.5 %, still open at the close 45.1 %. It also re-ran
-   the same rule on those 59 real sessions: it fired 33 times, 13 hit the
-   target, 15 the stop, 5 neither. Its verdict: close to a coin flip. That is
-   the point of looking before you risk a dollar.
-6. **`/trader-budget`** with a $5,000 account and a $50 max loss per trade:
-   50 / 5.86 = 8 shares ($2,913.44). If the stop fills at 358.32, the loss is
-   $46.88. It writes one bracket order: buy 8 TSLA, stop-loss 358.32,
-   take-profit 370.04.
-7. **`/trader-risk`** checks it against your limits: the max loss, the daily
-   loss limit, trades per day, reward to risk, the entry window, position
-   size and cash. PASS or BLOCK, with the reason.
-8. **`/trader-broker`** shows you the ticket in plain words. You type yes for
-   that exact order. Claude calls your brokerage connector (Alpaca's MCP
-   server, paper account by default), and Claude's own "Allow once / Deny"
-   card asks you one more time.
-9. **`/trader-alerts`** rings on the stop, the target and at 3:55 PM to
-   flatten whatever is still open.
-
-## The tools
-
-All standard-library Python. The data tools read public endpoints and are
-polite about it.
+### macOS and Linux
 
 ```bash
-python3 trader-scanner/scan.py universe                                # ~5,900 US stocks, Nasdaq Trader
-python3 trader-scanner/scan.py daily                                   # pre-market setups, whole universe
-python3 trader-scanner/scan.py orb --at 10:15                          # opening-range breakouts so far
-python3 trader-news/news.py --tickers TSLA --hours 12                  # headlines, 8-Ks, today's move
-python3 trader-entry/entry.py check TSLA --setup orb                   # waiting / triggered / expired
-python3 trader-entry/entry.py watch TSLA --every 30                    # bar by bar until it triggers
-python3 trader-exit/exit.py plan --stop or-mid --target 1R --write     # -> trader/plan.json
-python3 trader-timemachine/timemachine.py run --write                  # 10,000 replays + the history
-python3 trader-budget/size.py --write                                  # -> trader/orders.json
-python3 trader-risk/check.py                                           # PASS / BLOCK per order
-python3 trader-broker/ticket.py show                                   # the tickets, READY or not
-python3 trader-alerts/alerts.py add --from-plan                        # stop, target, flat by close
-python3 trader-alerts/alerts.py check                                  # rings what hit, once
-python3 trader-analyst/facts.py TSLA                                   # quarters, growth, EPS
-python3 trader-pelosi/ptr.py index --member pelosi                     # her PTRs this year
+git clone https://github.com/YushBytes/India-Investment-Intelligence.git
+cd India-Investment-Intelligence
+python3 --version
+python3 -m pip install pytest   # optional, for the test suite
 ```
 
-```bash
-python3 -m unittest discover -s tests -v
+### Optional configuration
+
+```powershell
+# where the market-data cache is written; defaults to a system temp directory
+$env:INDIACORE_CACHE_DIR = "C:\data\indiacore-cache"
 ```
 
-The tests run offline, on fixtures cut from real data: TSLA's 5-minute bars
-for the 60 days to October 19 2026, the 10:15 AM opening-range scan, Yahoo's
-TSLA headlines that morning, the House Clerk's 2026 index, real PTR text and
-real XBRL facts. They reproduce every number in the example above.
+No credentials are needed, because no implemented provider requires
+authentication. Copy `indiacore/config.india.example.json` and edit it to set
+your own INR limits.
 
-## Fine print
+### Quick check
 
-**Not financial advice.** This is software that reads public data and does
-arithmetic. It does not know your situation and it cannot see the future.
-Most people who day trade lose money. You can lose money. Decide for
-yourself, and talk to a licensed professional if you need advice.
+```python
+from indiacore import symbols
+from indiacore.data_service import MarketDataService
 
-**No trade goes through until you say yes.** Only `/trader-broker` can lead to
-an order, and only after `/trader-risk` passes that exact order and you type
-yes for it in the chat. Set your brokerage tool to "Needs approval" in Claude
-(Customize, Connectors, tool permissions), never "Always allow", so Claude's
-own "Allow once / Deny" card is a second check. No options, margin, short
-selling or leverage unless you turn them on.
+service = MarketDataService()
+result = service.get_quote(symbols.nse("SBIN"))
 
-**Paper first.** `"paper": true` is the default in `config.example.json`, and
-Alpaca's MCP server defaults to its paper account. Keys live in environment
-variables, never in the chat.
-
-**The Time Machine is a simulation, not a prediction.** It is built from the
-stock's own last 60 days of 5-minute bars. The future can do things those 60
-days never did: an earnings report, a halt, a headline. Treat its odds as a
-reality check, never as a promise.
-
-**A stop is a plan, not a guarantee.** In a fast market or across a gap, a
-stop order can fill well past its price. The max loss shown is the loss at
-the stop price.
-
-**The data is free and unofficial.** Yahoo Finance's chart endpoint is not an
-official API: it can lag, change or rate-limit you. The scanner and the entry
-timer read 1-minute or 5-minute bars, not every tick. Check anything that
-matters against your broker before you act on it.
-
-**Day-trading rules.** FINRA removed the $25,000 pattern-day-trader minimum
-on June 4, 2026 (Regulatory Notice 26-10), and brokers may phase the change
-in until October 20, 2027, so yours may still apply the old rule. If it does,
-set `"pdt_guard": true` and `/trader-risk` counts your day trades.
-
-**Congress's trades are public, not inside information.** Members must disclose
-trades over $1,000 within 45 days (the STOCK Act). The Pelosi skill reads those
-public filings the minute they post.
-
-**Taxes.** Day-trading gains are short-term gains, and frequent trading makes
-wash sales likely. Nothing here is tax advice.
-
-## Files
-
-```
-trader-scanner/     SKILL.md, scan.py
-trader-news/        SKILL.md, news.py
-trader-entry/       SKILL.md, entry.py
-trader-exit/        SKILL.md, exit.py
-trader-timemachine/ SKILL.md, timemachine.py
-trader-risk/        SKILL.md, check.py
-trader-budget/      SKILL.md, size.py, config.example.json, targets.example.json
-trader-broker/      SKILL.md, ticket.py, claude_desktop_config.example.json
-trader-alerts/      SKILL.md, alerts.py, alerts.example.json
-trader-analyst/     SKILL.md, facts.py, metrics.example.json
-trader-pelosi/      SKILL.md, ptr.py
-tests/              unittest suite + offline fixtures
+print(result.outcome)                  # delayed, end_of_day, stale, ...
+if result.usable:
+    print(result.first.last_price.format())
+    if not result.is_current_price:
+        print("not a live price:", result.notes[0])
 ```
 
-MIT. Made by [Jake Schincariol](https://opusjake.ai).
+## Testing
+
+The full suite is offline and deterministic. From the repository root:
+
+```powershell
+python -m pytest -q
+```
+
+Expected: **792 passed**, in roughly 30 seconds. No network access is used or
+required.
+
+Optional live checks against the real endpoints, kept deliberately separate
+from the test suite so that an outage elsewhere never fails CI:
+
+```powershell
+python -m indiacore.providers.live_probe
+```
+
+## Data Limitations
+
+Stated plainly, because the value of this project depends on them being
+honest:
+
+- **There is no verified real-time quote provider.** No implemented provider
+  promises real-time delivery, so a "live" classification is unreachable by
+  design. The code has the branch for a licensed feed; no such feed is wired
+  up.
+- **Yahoo Finance is unofficial.** An undocumented endpoint with no published
+  delay, no service level and no guarantee it will answer tomorrow. Treat it
+  as best-effort and never as the record of a price.
+- **NSE and BSE bhavcopy data is end-of-day only.** A bhavcopy is published
+  after the session closes. It cannot answer "what is the price now".
+- **Provider coverage varies.** Intraday bars come from Yahoo alone. Index
+  levels come from Yahoo alone, and are therefore unofficial. Yahoo's BSE
+  history is thinner than its NSE history.
+- **ETF classification is incomplete.** No verified provider distinguishes an
+  Indian ETF from an equity: Yahoo reports `NIFTYBEES.NS` and `GOLDBEES.NS` as
+  `EQUITY`, and the exchange bhavcopy carries only a generic stock type. ETFs
+  are quotable; their instrument type is reported as equity or unknown, never
+  guessed from the ticker.
+- **Future holiday calendars may be unavailable.** Indian exchange holidays
+  are announced by circular, not computed from rules. Only verified years are
+  shipped (2026 at present), and an unverified year raises rather than
+  guessing. NSE publishes the next year's circular in December.
+- **Prices are unadjusted.** Both bhavcopies publish prices as traded.
+  Validation flags a corporate-action-sized gap rather than silently
+  adjusting for it.
+- **The BSE calendar is borrowed.** The BSE market model currently uses the
+  NSE holiday list and says so. The equity dates have matched in recent years
+  but are published by separate circulars.
+
+## Safety
+
+**This is an investment research and decision-support tool. It is not an
+automated trading system.**
+
+- Nothing in the India data layer can place, modify or cancel an order. It
+  reads public market data and nothing else.
+- The INR configuration profile defaults to research only:
+  `auto_execute: false`, `paper: true`, `broker: none-research-only`, and
+  intraday, options, futures, margin, MTF and short selling all disabled.
+- The inherited `trader-*` skills include an order-execution skill. It
+  defaults to paper trading and cannot send an order without explicit human
+  confirmation. It is US-oriented and is not part of the India system.
+- Nothing here is financial advice. Output is research material for a person
+  to evaluate, and any investment decision and its consequences are the
+  user's own.
+
+## Attribution
+
+This project began as a migration of
+[Jakeschincariol/day-trader-skill](https://github.com/Jakeschincariol/day-trader-skill),
+an MIT-licensed pack of eleven US day-trading skills for Claude. That
+repository's history is preserved here as the first commit, its eleven skills
+are still present, and its MIT licence and copyright notice are retained
+unchanged in [LICENSE](LICENSE).
+
+The India-first work (`indiacore/`, its tests and its documentation) is new in
+this repository.
+
+## Licence
+
+MIT. See [LICENSE](LICENSE). Copyright for the original day-trading skill pack
+remains with its author, as the MIT licence requires.

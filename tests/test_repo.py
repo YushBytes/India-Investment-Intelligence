@@ -244,18 +244,63 @@ class Repo(unittest.TestCase):
         self.assertEqual(market["name"], "day-trader-skill")
         self.assertEqual(market["plugins"][0]["name"], "day-trader-skill")
 
-    def test_readme_carries_the_reel_copy(self):
+    def test_readme_is_the_india_project_and_carries_its_sections(self):
+        """The README is the India project's, not the upstream pack's.
+
+        Replaced rather than relaxed: the old version asserted the upstream
+        reel copy, which stopped being true when this became an India first
+        repository with its own identity. The assertions below are stricter
+        in the way that now matters, because they hold the README to the
+        disclosures the project's honesty depends on.
+        """
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
+            raw = fh.read()
+        readme = " ".join(raw.split())
+        self.assertTrue(raw.startswith("# India Investment Intelligence"))
+        for section in ("## Project Vision", "## Current Features",
+                        "## Architecture", "## Supported Providers",
+                        "## Completed Phases", "## Roadmap",
+                        "## Installation", "## Testing",
+                        "## Data Limitations", "## Safety",
+                        "## Attribution"):
+            self.assertIn(section, raw, section)
+
+    def test_the_readme_discloses_the_data_limitations(self):
+        """A reader must not have to dig for what the data cannot do."""
         with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
             readme = " ".join(fh.read().split())
-        self.assertTrue(readme.startswith("# The Day Trader skill"))
-        for line in (ABOUT,
-                     "https://github.com/Jakeschincariol/day-trader-skill install skill",
-                     "/plugin marketplace add Jakeschincariol/day-trader-skill",
-                     "/plugin install day-trader-skill@day-trader-skill",
-                     "## Fine print"):
-            self.assertIn(line, readme)
-        for s in SKILLS:
-            self.assertIn("/" + s, readme, s)
+        for disclosure in (
+                "no verified real-time quote provider",
+                "Yahoo Finance is unofficial",
+                "end-of-day only",
+                "ETF classification is incomplete",
+                "Future holiday calendars may be unavailable",
+                "not an automated trading system"):
+            self.assertIn(disclosure, readme, disclosure)
+
+    def test_the_readme_keeps_the_upstream_attribution(self):
+        """The MIT licence requires the notice to stay, and so does honesty."""
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
+            readme = fh.read()
+        self.assertIn("Jakeschincariol/day-trader-skill", readme)
+        self.assertIn("MIT", readme)
+        with open(os.path.join(ROOT, "LICENSE"), encoding="utf-8") as fh:
+            licence = fh.read()
+        self.assertIn("MIT License", licence)
+        self.assertIn("Jake Schincariol", licence,
+                      "the original copyright notice must not be removed")
+
+    def test_the_readme_claims_no_phase_that_is_not_done(self):
+        """Phases 4 and up are planned. The README must not imply otherwise."""
+        with open(os.path.join(ROOT, "README.md"), encoding="utf-8") as fh:
+            readme = fh.read()
+        head, _, roadmap = readme.partition("## Roadmap")
+        self.assertIn("Planned", roadmap)
+        self.assertNotIn("| Complete |", roadmap,
+                         "a future phase is marked complete in the roadmap")
+        completed, _, _ = head.partition("## Roadmap")
+        self.assertIn("df3eb2d", completed)
+        self.assertIn("c391136", completed)
 
     def test_no_em_dashes_and_no_personal_email(self):
         for path in every_text_file():
