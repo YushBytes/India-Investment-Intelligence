@@ -4,3 +4,5 @@ __pycache__/
 trader/
 *.pre-india.bak
 *.migration.json
+indiacore-cache/
+*.corrupt

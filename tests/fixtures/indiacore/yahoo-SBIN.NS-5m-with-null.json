@@ -1,0 +1,167 @@
+{
+ "chart": {
+  "result": [
+   {
+    "meta": {
+     "currency": "INR",
+     "symbol": "SBIN.NS",
+     "exchangeName": "NSI",
+     "fullExchangeName": "NSE",
+     "instrumentType": "EQUITY",
+     "firstTradeDate": 820467900,
+     "regularMarketTime": 1794563889,
+     "hasPrePostMarketData": false,
+     "gmtoffset": 19800,
+     "timezone": "IST",
+     "exchangeTimezoneName": "Asia/Kolkata",
+     "regularMarketPrice": 1080.0,
+     "regularMarketChangePercent": -0.598,
+     "fulldayPrice": 1080.0,
+     "fulldayChange": -6.5,
+     "fulldayChangePercent": -0.598,
+     "fiftyTwoWeekHigh": 1234.7,
+     "fiftyTwoWeekLow": 933.9,
+     "regularMarketDayHigh": 1090.7,
+     "regularMarketDayLow": 1074.15,
+     "regularMarketVolume": 15834714,
+     "longName": "State Bank of India",
+     "shortName": "STATE BANK OF INDIA",
+     "chartPreviousClose": 1086.5,
+     "previousClose": 1086.5,
+     "scale": 3,
+     "priceHint": 2,
+     "currentTradingPeriod": {
+      "pre": {
+       "timezone": "IST",
+       "end": 1794541500,
+       "start": 1794541500,
+       "gmtoffset": 19800
+      },
+      "regular": {
+       "timezone": "IST",
+       "end": 1794564000,
+       "start": 1794541500,
+       "gmtoffset": 19800
+      },
+      "post": {
+       "timezone": "IST",
+       "end": 1794564000,
+       "start": 1794564000,
+       "gmtoffset": 19800
+      }
+     },
+     "tradingPeriods": [
+      [
+       {
+        "timezone": "IST",
+        "end": 1794564000,
+        "start": 1794541500,
+        "gmtoffset": 19800
+       }
+      ]
+     ],
+     "dataGranularity": "5m",
+     "range": "1d",
+     "validRanges": [
+      "1d",
+      "5d",
+      "1mo",
+      "3mo",
+      "6mo",
+      "1y",
+      "2y",
+      "5y",
+      "10y",
+      "ytd",
+      "max"
+     ]
+    },
+    "timestamp": [
+     1794560700,
+     1794561000,
+     1794561300,
+     1794561600,
+     1794561900,
+     1794562200,
+     1794562500,
+     1794562800,
+     1794563100,
+     1794563400,
+     1794563700
+    ],
+    "indicators": {
+     "quote": [
+      {
+       "open": [
+        1082.800048828125,
+        1082.0999755859375,
+        1081.8499755859375,
+        1081.9000244140625,
+        1080.9000244140625,
+        1079.6500244140625,
+        1079.4000244140625,
+        1080.0,
+        1080.9000244140625,
+        null,
+        1080.0
+       ],
+       "close": [
+        1082.0,
+        1081.8499755859375,
+        1081.800048828125,
+        1080.8499755859375,
+        1079.5999755859375,
+        1079.800048828125,
+        1080.449951171875,
+        1080.75,
+        1080.0,
+        null,
+        1080.0
+       ],
+       "low": [
+        1081.6500244140625,
+        1081.0999755859375,
+        1081.3499755859375,
+        1080.5,
+        1079.5999755859375,
+        1079.0999755859375,
+        1079.0,
+        1077.949951171875,
+        1080.0,
+        null,
+        1080.0
+       ],
+       "high": [
+        1083.8499755859375,
+        1082.6500244140625,
+        1082.1500244140625,
+        1081.949951171875,
+        1081.4000244140625,
+        1079.949951171875,
+        1080.5,
+        1081.699951171875,
+        1080.9000244140625,
+        null,
+        1080.0
+       ],
+       "volume": [
+        286699,
+        108622,
+        107951,
+        150766,
+        186359,
+        256327,
+        320261,
+        929436,
+        1705,
+        null,
+        372523
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "error": null
+ }
+}

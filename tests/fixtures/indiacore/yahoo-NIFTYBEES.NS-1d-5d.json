@@ -1,0 +1,130 @@
+{
+ "chart": {
+  "result": [
+   {
+    "meta": {
+     "currency": "INR",
+     "symbol": "NIFTYBEES.NS",
+     "exchangeName": "NSI",
+     "fullExchangeName": "NSE",
+     "instrumentType": "EQUITY",
+     "firstTradeDate": 1230781500,
+     "regularMarketTime": 1794563999,
+     "hasPrePostMarketData": false,
+     "gmtoffset": 19800,
+     "timezone": "IST",
+     "exchangeTimezoneName": "Asia/Kolkata",
+     "regularMarketPrice": 286.64,
+     "regularMarketChangePercent": -0.548,
+     "fulldayPrice": 286.64,
+     "fulldayChange": -1.58,
+     "fulldayChangePercent": -0.548,
+     "fiftyTwoWeekHigh": 302.25,
+     "fiftyTwoWeekLow": 251.7,
+     "regularMarketDayHigh": 288.49,
+     "regularMarketDayLow": 286.0,
+     "regularMarketVolume": 9203286,
+     "longName": "Nippon India ETF Nifty 50 BeES",
+     "shortName": "NIP IND ETF NIFTY BEES",
+     "chartPreviousClose": 284.22,
+     "priceHint": 2,
+     "currentTradingPeriod": {
+      "pre": {
+       "timezone": "IST",
+       "end": 1794541500,
+       "start": 1794541500,
+       "gmtoffset": 19800
+      },
+      "regular": {
+       "timezone": "IST",
+       "end": 1794564000,
+       "start": 1794541500,
+       "gmtoffset": 19800
+      },
+      "post": {
+       "timezone": "IST",
+       "end": 1794564000,
+       "start": 1794564000,
+       "gmtoffset": 19800
+      }
+     },
+     "dataGranularity": "1d",
+     "range": "5d",
+     "validRanges": [
+      "1d",
+      "5d",
+      "1mo",
+      "3mo",
+      "6mo",
+      "1y",
+      "2y",
+      "5y",
+      "10y",
+      "ytd",
+      "max"
+     ]
+    },
+    "timestamp": [
+     1793936700,
+     1794195900,
+     1794368700,
+     1794455100,
+     1794541500
+    ],
+    "indicators": {
+     "quote": [
+      {
+       "low": [
+        276.57000732421875,
+        283.04998779296875,
+        285.010009765625,
+        284.6300048828125,
+        286.0
+       ],
+       "volume": [
+        20193627,
+        11312101,
+        14629439,
+        9873872,
+        9203286
+       ],
+       "open": [
+        278.0,
+        285.010009765625,
+        285.010009765625,
+        286.79998779296875,
+        288.489990234375
+       ],
+       "close": [
+        284.2200012207031,
+        285.010009765625,
+        286.5400085449219,
+        288.2200012207031,
+        286.6400146484375
+       ],
+       "high": [
+        284.95001220703125,
+        285.8800048828125,
+        289.7200012207031,
+        289.20001220703125,
+        288.489990234375
+       ]
+      }
+     ],
+     "adjclose": [
+      {
+       "adjclose": [
+        284.2200012207031,
+        285.010009765625,
+        286.5400085449219,
+        288.2200012207031,
+        286.6400146484375
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "error": null
+ }
+}

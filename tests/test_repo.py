@@ -1,6 +1,8 @@
+import ast
 import json
 import os
 import re
+import sys
 import unittest
 
 from _load import ROOT
@@ -22,12 +24,34 @@ V1_ONLY = ["trader-copycat", "trader-screener", "trader-tax", "trader-rebalance"
 CORE = "indiacore"
 CORE_MODULES = ["calendar_in", "config_in", "market", "money", "provenance", "symbols"]
 
+# India migration, phase 3: the market data layer. Two subpackages and three
+# modules at the package root, held to exactly the same rules as phase 2.
+CORE_PACKAGES = ["marketdata", "providers"]
+CORE_PHASE3_MODULES = ["data_service", "rate_limit", "retry"]
+MARKETDATA_MODULES = ["cache", "models", "normalize", "quality", "validation"]
+PROVIDER_MODULES = ["base", "bse", "live_probe", "nse", "registry",
+                    "transport", "yahoo"]
+
 
 def frontmatter(path):
     with open(path, encoding="utf-8") as fh:
         text = fh.read()
     m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
     return (m.group(1) if m else ""), text
+
+
+def every_core_python_file():
+    """Every .py in the package, including the phase 3 subpackages.
+
+    The original version listed only the top level, which would have let a
+    subpackage import a dependency or use 3.9 only syntax unnoticed.
+    """
+    folder = os.path.join(ROOT, CORE)
+    for base, dirs, files in os.walk(folder):
+        dirs[:] = [d for d in dirs if d != "__pycache__"]
+        for name in sorted(files):
+            if name.endswith(".py"):
+                yield os.path.relpath(os.path.join(base, name), ROOT)
 
 
 def every_text_file():
@@ -67,20 +91,106 @@ class Repo(unittest.TestCase):
         """The pack promises nothing to pip install. That has to stay true."""
         allowed = set("""
             __future__ copy csv datetime decimal gzip hashlib importlib io json
-            math os random re shutil statistics subprocess sys tempfile time
-            typing unittest urllib xml zipfile indiacore
+            math os random re shutil socket statistics subprocess sys tempfile
+            time typing unittest urllib xml zipfile indiacore
         """.split())
+        # Parsed rather than matched by regex: a line of prose that happens
+        # to begin with "from" is not an import, and the regex version read
+        # one in a docstring as a dependency.
+        for rel in every_core_python_file():
+            with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
+                tree = ast.parse(fh.read(), rel)
+            for node in ast.walk(tree):
+                tops = []
+                if isinstance(node, ast.Import):
+                    tops = [a.name.split(".")[0] for a in node.names]
+                elif isinstance(node, ast.ImportFrom):
+                    if node.level:  # a relative import, inside the package
+                        continue
+                    tops = [(node.module or "").split(".")[0]]
+                for top in tops:
+                    self.assertIn(top, allowed, "%s imports %s" % (rel, top))
+
+    def test_the_data_layer_is_shaped_as_documented(self):
         folder = os.path.join(ROOT, CORE)
-        for name in sorted(os.listdir(folder)):
-            if not name.endswith(".py"):
+        for name in CORE_PHASE3_MODULES:
+            self.assertTrue(os.path.exists(os.path.join(folder, name + ".py")),
+                            name)
+        for package, modules in ((CORE_PACKAGES[0], MARKETDATA_MODULES),
+                                 (CORE_PACKAGES[1], PROVIDER_MODULES)):
+            sub = os.path.join(folder, package)
+            self.assertTrue(os.path.exists(os.path.join(sub, "__init__.py")),
+                            package)
+            for name in modules:
+                self.assertTrue(
+                    os.path.exists(os.path.join(sub, name + ".py")),
+                    "%s/%s" % (package, name))
+        self.assertTrue(os.path.exists(os.path.join(folder, "DATA.md")))
+
+    def test_the_verified_holiday_directory_stayed_data_only(self):
+        """indiacore/data holds the exchange's published lists, not code.
+
+        Phase 3 put its modules in indiacore/marketdata for this reason: the
+        data directory is what calendar_in reads and what the provenance test
+        below checks.
+        """
+        data = os.path.join(ROOT, CORE, "data")
+        for name in os.listdir(data):
+            if name == "__pycache__":
                 continue
-            with open(os.path.join(folder, name), encoding="utf-8") as fh:
+            self.assertTrue(name.endswith(".json"),
+                            "%s is not holiday data" % name)
+
+    def test_only_the_transport_reaches_the_network(self):
+        """One place makes requests, which is what keeps the suite offline."""
+        allowed = (os.path.join(CORE, "providers", "transport.py"),
+                   os.path.join(CORE, "providers", "live_probe.py"))
+        for rel in every_core_python_file():
+            if rel.endswith(allowed):
+                continue
+            with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
                 src = fh.read()
-            for m in re.finditer(r"(?m)^\s*(?:from|import)\s+([A-Za-z_][\w.]*)", src):
-                top = m.group(1).split(".")[0]
-                if top == ".":
-                    continue
-                self.assertIn(top, allowed, "%s/%s imports %s" % (CORE, name, top))
+            for banned in ("urlopen(", "urllib.request", "http.client",
+                           "socket.socket"):
+                self.assertNotIn(banned, src,
+                                 "%s reaches the network directly" % rel)
+
+    def test_no_provider_claims_real_time_or_hides_a_refusal(self):
+        """The honesty rules, asserted against the code and not the docs."""
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        from indiacore.providers import registry as registry_mod
+
+        rows = dict((r["provider"], r)
+                    for r in registry_mod.default_registry().matrix())
+        self.assertEqual(len(rows), 5)
+        for name, row in rows.items():
+            self.assertFalse(row["realtime"], "%s claims real time" % name)
+            if row["auth_required"]:
+                self.assertFalse(row["operational"],
+                                 "%s needs auth and claims to work" % name)
+            if not row["operational"]:
+                self.assertEqual(row["kinds"], [],
+                                 "%s is not operational and declares work"
+                                 % name)
+            self.assertTrue(row["notes"], "%s documents nothing" % name)
+        self.assertTrue(rows["nse_bhavcopy"]["official"])
+        self.assertTrue(rows["bse_bhavcopy"]["official"])
+        self.assertFalse(rows["yahoo"]["official"])
+
+    def test_the_cache_never_defaults_into_the_repository(self):
+        if ROOT not in sys.path:
+            sys.path.insert(0, ROOT)
+        saved = os.environ.pop("INDIACORE_CACHE_DIR", None)
+        try:
+            from indiacore.marketdata import cache as cache_mod
+            self.assertFalse(
+                os.path.abspath(cache_mod.default_dir()).startswith(
+                    os.path.abspath(ROOT)),
+                "the cache would be written inside the repository")
+        finally:
+            if saved is not None:
+                os.environ["INDIACORE_CACHE_DIR"] = saved
 
     def test_the_core_holiday_data_is_verified_and_sourced(self):
         """A calendar with no provenance is a guess with a filename."""
@@ -169,21 +279,23 @@ class Repo(unittest.TestCase):
     def test_every_tool_runs_on_python_3_8(self):
         # no 3.9+ only modules or syntax in the tools (the README promises 3.8)
         # indiacore is held to the same floor as the skills it will serve
-        for s in SKILLS + [CORE]:
+        files = []
+        for s in SKILLS:
             folder = os.path.join(ROOT, s)
-            for f in os.listdir(folder):
-                if not f.endswith(".py"):
-                    continue
-                with open(os.path.join(folder, f), encoding="utf-8") as fh:
-                    src = fh.read()
-                for bad in ("import zoneinfo", "from zoneinfo", ".removeprefix(", ".removesuffix(",
-                            "match ", "list[", "dict[", "tuple["):
-                    if bad == "match ":
-                        self.assertNotRegex(src, r"(?m)^\s+match \w+.*:$", "%s/%s" % (s, f))
-                    elif bad.endswith("["):
-                        self.assertNotRegex(src, r"(?<![\w.])%s" % re.escape(bad), "%s/%s" % (s, f))
-                    else:
-                        self.assertNotIn(bad, src, "%s/%s" % (s, f))
+            files.extend(os.path.join(s, f) for f in os.listdir(folder)
+                         if f.endswith(".py"))
+        files.extend(every_core_python_file())  # the subpackages too
+        for rel in files:
+            with open(os.path.join(ROOT, rel), encoding="utf-8") as fh:
+                src = fh.read()
+            for bad in ("import zoneinfo", "from zoneinfo", ".removeprefix(", ".removesuffix(",
+                        "match ", "list[", "dict[", "tuple["):
+                if bad == "match ":
+                    self.assertNotRegex(src, r"(?m)^\s+match \w+.*:$", rel)
+                elif bad.endswith("["):
+                    self.assertNotRegex(src, r"(?<![\w.])%s" % re.escape(bad), rel)
+                else:
+                    self.assertNotIn(bad, src, rel)
 
     def test_day_trading_limits_ship_in_the_example_config(self):
         with open(os.path.join(ROOT, "trader-budget", "config.example.json")) as fh:

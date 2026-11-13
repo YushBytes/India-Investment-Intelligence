@@ -1,0 +1,130 @@
+{
+ "chart": {
+  "result": [
+   {
+    "meta": {
+     "currency": "INR",
+     "symbol": "M&M.NS",
+     "exchangeName": "NSI",
+     "fullExchangeName": "NSE",
+     "instrumentType": "EQUITY",
+     "firstTradeDate": 820467900,
+     "regularMarketTime": 1794563884,
+     "hasPrePostMarketData": false,
+     "gmtoffset": 19800,
+     "timezone": "IST",
+     "exchangeTimezoneName": "Asia/Kolkata",
+     "regularMarketPrice": 3333.0,
+     "regularMarketChangePercent": -1.942,
+     "fulldayPrice": 3333.0,
+     "fulldayChange": -66.0,
+     "fulldayChangePercent": -1.942,
+     "fiftyTwoWeekHigh": 3839.9,
+     "fiftyTwoWeekLow": 2744.3,
+     "regularMarketDayHigh": 3382.0,
+     "regularMarketDayLow": 3330.0,
+     "regularMarketVolume": 1987462,
+     "longName": "Mahindra & Mahindra Limited",
+     "shortName": "MAHINDRA & MAHINDRA LTD",
+     "chartPreviousClose": 3287.2,
+     "priceHint": 2,
+     "currentTradingPeriod": {
+      "pre": {
+       "timezone": "IST",
+       "end": 1794541500,
+       "start": 1794541500,
+       "gmtoffset": 19800
+      },
+      "regular": {
+       "timezone": "IST",
+       "end": 1794564000,
+       "start": 1794541500,
+       "gmtoffset": 19800
+      },
+      "post": {
+       "timezone": "IST",
+       "end": 1794564000,
+       "start": 1794564000,
+       "gmtoffset": 19800
+      }
+     },
+     "dataGranularity": "1d",
+     "range": "5d",
+     "validRanges": [
+      "1d",
+      "5d",
+      "1mo",
+      "3mo",
+      "6mo",
+      "1y",
+      "2y",
+      "5y",
+      "10y",
+      "ytd",
+      "max"
+     ]
+    },
+    "timestamp": [
+     1793936700,
+     1794195900,
+     1794368700,
+     1794455100,
+     1794541500
+    ],
+    "indicators": {
+     "quote": [
+      {
+       "high": [
+        3287.199951171875,
+        3305.0,
+        3465.0,
+        3429.89990234375,
+        3382.0
+       ],
+       "open": [
+        3199.89990234375,
+        3278.0,
+        3340.0,
+        3425.0,
+        3380.0
+       ],
+       "volume": [
+        8520444,
+        2293597,
+        5574796,
+        2624113,
+        1987462
+       ],
+       "close": [
+        3287.199951171875,
+        3290.60009765625,
+        3465.0,
+        3399.0,
+        3333.0
+       ],
+       "low": [
+        3130.10009765625,
+        3239.60009765625,
+        3339.89990234375,
+        3368.0,
+        3330.0
+       ]
+      }
+     ],
+     "adjclose": [
+      {
+       "adjclose": [
+        3287.199951171875,
+        3290.60009765625,
+        3465.0,
+        3399.0,
+        3333.0
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "error": null
+ }
+}

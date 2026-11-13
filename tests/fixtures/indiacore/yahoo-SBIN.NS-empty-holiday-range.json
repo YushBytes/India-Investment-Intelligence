@@ -1,0 +1,79 @@
+{
+ "chart": {
+  "result": [
+   {
+    "meta": {
+     "currency": "INR",
+     "symbol": "SBIN.NS",
+     "exchangeName": "NSI",
+     "fullExchangeName": "NSE",
+     "instrumentType": "EQUITY",
+     "firstTradeDate": 820467900,
+     "regularMarketTime": 1794563889,
+     "hasPrePostMarketData": false,
+     "gmtoffset": 19800,
+     "timezone": "IST",
+     "exchangeTimezoneName": "Asia/Kolkata",
+     "regularMarketPrice": 1080.0,
+     "regularMarketChangePercent": -0.598,
+     "fulldayPrice": 1080.0,
+     "fulldayChange": -6.5,
+     "fulldayChangePercent": -0.598,
+     "fiftyTwoWeekHigh": 1234.7,
+     "fiftyTwoWeekLow": 933.9,
+     "regularMarketDayHigh": 1090.7,
+     "regularMarketDayLow": 1074.15,
+     "regularMarketVolume": 15834714,
+     "longName": "State Bank of India",
+     "shortName": "STATE BANK OF INDIA",
+     "chartPreviousClose": 1018.5,
+     "priceHint": 2,
+     "currentTradingPeriod": {
+      "pre": {
+       "timezone": "IST",
+       "start": 1794541500,
+       "end": 1794541500,
+       "gmtoffset": 19800
+      },
+      "regular": {
+       "timezone": "IST",
+       "start": 1794541500,
+       "end": 1794564000,
+       "gmtoffset": 19800
+      },
+      "post": {
+       "timezone": "IST",
+       "start": 1794564000,
+       "end": 1794564000,
+       "gmtoffset": 19800
+      }
+     },
+     "dataGranularity": "1d",
+     "range": "",
+     "validRanges": [
+      "1d",
+      "5d",
+      "1mo",
+      "3mo",
+      "6mo",
+      "1y",
+      "2y",
+      "5y",
+      "10y",
+      "ytd",
+      "max"
+     ]
+    },
+    "indicators": {
+     "quote": [
+      {}
+     ],
+     "adjclose": [
+      {}
+     ]
+    }
+   }
+  ],
+  "error": null
+ }
+}

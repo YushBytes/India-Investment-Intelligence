@@ -27,8 +27,14 @@ END_OF_DAY = "end_of_day"
 HISTORICAL = "historical"
 STALE = "stale"
 UNAVAILABLE = "unavailable"
+# The age of the figures could not be established at all: no source timestamp,
+# or a provider that does not say how old its numbers are. Distinct from
+# UNAVAILABLE, which means the fetch itself failed, and from STALE, which means
+# the age is known and too great.
+UNKNOWN = "unknown"
 
 USABLE_FRESHNESS = (LIVE, DELAYED, END_OF_DAY, HISTORICAL)
+ALL_FRESHNESS = (LIVE, DELAYED, END_OF_DAY, HISTORICAL, STALE, UNKNOWN, UNAVAILABLE)
 
 
 class DataError(Exception):
@@ -112,6 +118,14 @@ class DataResult(object):
         if self.freshness == STALE:
             raise StaleDataError(
                 "%s data for %s is marked stale" % (self.source, self.as_of))
+        if self.freshness not in USABLE_FRESHNESS:
+            # Catch all, so that is_usable and require_usable can never
+            # disagree. Before this check an unrecognised freshness (including
+            # UNKNOWN) returned self here while is_usable said False.
+            raise StaleDataError(
+                "%s data for %s has freshness %r, which is not one of %s"
+                % (self.source, self.as_of, self.freshness,
+                   ", ".join(USABLE_FRESHNESS)))
         if self.fetched == 0:
             raise EmptyResultError(
                 "%s fetched 0 of %d items (%d failed). This is a data failure, "

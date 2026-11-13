@@ -1,0 +1,98 @@
+{
+ "chart": {
+  "result": [
+   {
+    "meta": {
+     "currency": "INR",
+     "symbol": "INFY.BO",
+     "exchangeName": "BSE",
+     "fullExchangeName": "BSE",
+     "instrumentType": "EQUITY",
+     "firstTradeDate": 1784259900,
+     "regularMarketTime": 1794565549,
+     "hasPrePostMarketData": false,
+     "gmtoffset": 19800,
+     "timezone": "IST",
+     "exchangeTimezoneName": "Asia/Kolkata",
+     "regularMarketPrice": 1140.0,
+     "regularMarketChangePercent": -0.688,
+     "fulldayPrice": 1140.0,
+     "fulldayChange": -7.9,
+     "fulldayChangePercent": -0.688,
+     "fiftyTwoWeekHigh": 1922.65,
+     "fiftyTwoWeekLow": 1135.5,
+     "regularMarketDayHigh": 1155.0,
+     "regularMarketDayLow": 1135.5,
+     "regularMarketVolume": 221167,
+     "longName": "Infosys Limited",
+     "shortName": "INFOSYS LTD.",
+     "chartPreviousClose": 1147.9,
+     "priceHint": 2,
+     "currentTradingPeriod": {
+      "pre": {
+       "timezone": "IST",
+       "end": 1794541500,
+       "start": 1794541500,
+       "gmtoffset": 19800
+      },
+      "regular": {
+       "timezone": "IST",
+       "end": 1794564000,
+       "start": 1794541500,
+       "gmtoffset": 19800
+      },
+      "post": {
+       "timezone": "IST",
+       "end": 1794564000,
+       "start": 1794564000,
+       "gmtoffset": 19800
+      }
+     },
+     "dataGranularity": "1d",
+     "range": "5d",
+     "validRanges": [
+      "1d",
+      "5d",
+      "1mo",
+      "3mo",
+      "6mo",
+      "ytd",
+      "max"
+     ]
+    },
+    "timestamp": [
+     1794565549
+    ],
+    "indicators": {
+     "quote": [
+      {
+       "low": [
+        1135.5
+       ],
+       "close": [
+        1140.0
+       ],
+       "volume": [
+        221167
+       ],
+       "open": [
+        1149.0
+       ],
+       "high": [
+        1155.0
+       ]
+      }
+     ],
+     "adjclose": [
+      {
+       "adjclose": [
+        1140.0
+       ]
+      }
+     ]
+    }
+   }
+  ],
+  "error": null
+ }
+}
