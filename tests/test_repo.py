@@ -97,7 +97,7 @@ class Repo(unittest.TestCase):
                 if line.startswith("| ") and "**Complete**" in line]
         self.assertEqual(len(rows), 3, "expected phases 1, 2 and 3 complete")
         hashes = re.findall(r"\b([0-9a-f]{7})\b", " ".join(rows))
-        for sha in ("df3eb2d", "c391136"):
+        for sha in ("137c19e", "a2f3cc2"):
             self.assertIn(sha, hashes, "%s is not cited in the roadmap" % sha)
 
     def test_the_roadmap_claims_no_phase_beyond_the_third(self):
@@ -330,8 +330,8 @@ class Repo(unittest.TestCase):
         self.assertNotIn("| Complete |", roadmap,
                          "a future phase is marked complete in the roadmap")
         completed, _, _ = head.partition("## Roadmap")
-        self.assertIn("df3eb2d", completed)
-        self.assertIn("c391136", completed)
+        self.assertIn("137c19e", completed)
+        self.assertIn("a2f3cc2", completed)
 
     def test_no_em_dashes_and_no_personal_email(self):
         for path in every_text_file():

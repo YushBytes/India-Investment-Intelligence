@@ -8,15 +8,16 @@ only when its code is committed, its tests pass and its limitations are
 documented. Everything else is planned, which means designed at most and
 usually not that.
 
-**Last updated:** 13 November 2026, at commit `3974b87`.
+**Last updated:** 13 November 2026, after the history rewrite recorded in
+[SECURITY_REMEDIATION.md](SECURITY_REMEDIATION.md).
 
 ## Status at a glance
 
 | Phase | Name | Status | Commit |
 | --- | --- | --- | --- |
 | 1 | Repository audit | **Complete** | audit only, no code change |
-| 2 | India market foundation | **Complete** | [`df3eb2d`](https://github.com/YushBytes/India-Investment-Intelligence/commit/df3eb2d89fdf5a3585831a90ccbcbdb8a97cdc79) |
-| 3 | Indian market data infrastructure | **Complete** | [`c391136`](https://github.com/YushBytes/India-Investment-Intelligence/commit/c391136b52ee49c82e1d97a8ae112e110b84cce7) |
+| 2 | India market foundation | **Complete** | [`137c19e`](https://github.com/YushBytes/India-Investment-Intelligence/commit/137c19e000908f225944b449ea061061d38aa970) |
+| 3 | Indian market data infrastructure | **Complete** | [`a2f3cc2`](https://github.com/YushBytes/India-Investment-Intelligence/commit/a2f3cc29b3879d135d397cd764933b8d9855a400) |
 | 4 | Fundamental data and financial metrics | Planned | |
 | 5 | Technical analysis indicators | Planned | |
 | 6 | Stock scanner and screener | Planned | |
@@ -56,7 +57,7 @@ Indian symbols rather than loudly:
 
 ## Phase 2: India market foundation
 
-**Status:** Complete. Commit `df3eb2d`. 473 tests passing at the time.
+**Status:** Complete. Commit `137c19e`. 473 tests passing at the time.
 
 **Deliverables.** `indiacore/`, six modules, no new dependencies:
 
@@ -85,7 +86,7 @@ so); Muhurat session timings, which are notified separately each year.
 
 ## Phase 3: Indian market data infrastructure
 
-**Status:** Complete. Commit `c391136`. 792 tests passing.
+**Status:** Complete. Commit `a2f3cc2`. 792 tests passing.
 
 **Deliverables.** The data layer, built around one rule: a missing or stale
 quote is never presented as a current market price.
